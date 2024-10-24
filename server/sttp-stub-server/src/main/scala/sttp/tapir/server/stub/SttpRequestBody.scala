@@ -24,7 +24,7 @@ class SttpRequestBody[F[_]](implicit ME: MonadError[F]) extends RequestBody[F, A
           case RawBodyType.InputStreamBody      => ME.unit(RawValue(new ByteArrayInputStream(bytes)))
           case RawBodyType.FileBody             => ME.error(new UnsupportedOperationException)
           case RawBodyType.InputStreamRangeBody => ME.unit(RawValue(InputStreamRange(() => new ByteArrayInputStream(bytes))))
-          case _: RawBodyType.MultipartBody     => parseMultipartBody(serverRequest, bodyType)
+          case RawBodyType.MultipartBody        => parseMultipartBody(serverRequest, bodyType)
         }
       case Right(value) =>
         bodyType match {

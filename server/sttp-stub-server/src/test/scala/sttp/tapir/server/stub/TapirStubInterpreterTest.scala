@@ -209,15 +209,13 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
   it should "handle multipart request and verify it is correctly received by the endpoint logic" in {
     case class MultipartData(text: String, file: Array[Byte])
 
-    // Define the endpoint
     val multipartEndpoint = endpoint.post
       .in(multipartBody[MultipartData])
-      .out(stringBody) // Expecting a string response
+      .out(stringBody) 
 
-    // Set up the backend with the correct server logic
     val backend = TapirStubInterpreter(options, SttpBackendStub(IdMonad))
       .whenServerEndpointRunLogic(multipartEndpoint.serverLogic { _ =>
-        IdMonad.unit(Right("Received")) // Return string on success
+        IdMonad.unit(Right("Received")) 
       })
       .backend()
 
@@ -228,24 +226,20 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
       .apply(multipartRequest)
       .send(backend)
 
-    // Check that the response body is a Right with the expected string
-    response.body shouldBe Right("Received") // This should match the response type
+    response.body shouldBe Right("Received") 
   }
 
   it should "handle multipart request using derived multipart body" in {
     case class FileUpload(name: String, data: Array[Byte])
     implicit val fileUploadSchema: Schema[FileUpload] = Schema.derived[FileUpload] // Manual schema derivation
 
-    // Define the endpoint
     val uploadEndpoint = endpoint.post
       .in(multipartBody[FileUpload])
-      .out(stringBody) // Expecting a string response
+      .out(stringBody) 
 
-    // Set up the backend with the correct server logic
     val backend = TapirStubInterpreter(options, SttpBackendStub(IdMonad))
       .whenServerEndpointRunLogic(uploadEndpoint.serverLogic { _ =>
-        IdMonad.unit(Right("Upload Successful")) // Return string on success
-      })
+        IdMonad.unit(Right("Upload Successful")) 
       .backend()
 
     val filePart = FileUpload("example.txt", Array[Byte](1, 2, 3))
@@ -255,11 +249,11 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
       .apply(filePart)
       .send(backend)
 
-    // Check that the response body is a Right with the expected string
-    response.body shouldBe Right("Upload Successful") // This should match the response type
+    response.body shouldBe Right("Upload Successful")
+      
   }
-
 }
+
 
 object ProductsApi {
 
