@@ -24,7 +24,7 @@ class SttpRequestBody[F[_]](implicit ME: MonadError[F]) extends RequestBody[F, A
           case RawBodyType.InputStreamBody      => ME.unit(RawValue(new ByteArrayInputStream(bytes)))
           case RawBodyType.FileBody             => ME.error(new UnsupportedOperationException)
           case RawBodyType.InputStreamRangeBody => ME.unit(RawValue(InputStreamRange(() => new ByteArrayInputStream(bytes))))
-          case _: RawBodyType.MultipartBody     => parseMultipartBody(serverRequest)
+          case _: RawBodyType.MultipartBody     => parseMultipartBody(serverRequest, bodyType)
         }
       case Right(value) =>
         bodyType match {
@@ -34,7 +34,7 @@ class SttpRequestBody[F[_]](implicit ME: MonadError[F]) extends RequestBody[F, A
         }
     }
 
-  private def parseMultipartBody(serverRequest: ServerRequest): F[RawValue[Seq[RawValue[_]]]] = {
+  private def parseMultipartBody[R](serverRequest: ServerRequest, bodyType: RawBodyType[R]): F[RawValue[R]] = {
     val sttpRequest = serverRequest.underlying.asInstanceOf[Request[_, _]]
     sttpRequest.body match {
       case MultipartBody(parts) =>
@@ -45,7 +45,7 @@ class SttpRequestBody[F[_]](implicit ME: MonadError[F]) extends RequestBody[F, A
             case _                                => throw new UnsupportedOperationException("Unsupported part type")
           }
         }
-        ME.unit(RawValue(rawParts))
+        ME.unit(RawValue(rawParts.asInstanceOf[R]))
       case _ => ME.error(new IllegalArgumentException("Expected a multipart body"))
     }
   }
