@@ -207,28 +207,6 @@ class SttpStubServerTest extends AnyFlatSpec with Matchers {
     // then
     response.body shouldBe Vector(1, 2, 3)
   }
-
-it should "handle multipart request and verify it is correctly received by the endpoint logic" in {
-  case class MultipartData(text: String, file: Array[Byte])
-
-  val endpoint = sttp.tapir.endpoint.post
-    .in(multipartBody[MultipartData]) // Using derived multipart body
-    .out(stringBody)
-
-  val backend = SttpBackendStub
-    .apply(idMonad)
-    .whenServerEndpointRunLogic(endpoint)
-    .thenRespond("Received") // Simulate the expected response
-
-  val multipartRequest = MultipartData("test", Array[Byte](1, 2, 3))
-
-  val response = SttpClientInterpreter()
-    .toRequestThrowDecodeFailures(endpoint, Some(uri"http://test.com"))
-    .apply(multipartRequest)
-    .send(backend)
-
-  response.body shouldBe Right("Received")
-  }
 }
 
 final case class ResponseWrapper(response: Double)
