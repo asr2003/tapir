@@ -207,46 +207,56 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
   }
 
   it should "handle multipart request and verify it is correctly received by the endpoint logic" in {
-    case class MultipartData(text: String, file: Array[Byte]) // Adjust as necessary
+    case class MultipartData(text: String, file: Array[Byte])
 
+    // Define the endpoint
     val multipartEndpoint = endpoint.post
-      .in(multipartBody[MultipartData]) // Using derived multipart body
-      .out(stringBody)
+      .in(multipartBody[MultipartData])
+      .out(stringBody) // Expecting a string response
 
+    // Set up the backend with the correct server logic
     val backend = TapirStubInterpreter(options, SttpBackendStub(IdMonad))
-      .whenServerEndpointRunLogic(multipartEndpoint.serverLogic(_ => IdMonad.unit(Right("Received"))))
+      .whenServerEndpointRunLogic(multipartEndpoint.serverLogic { _ =>
+        IdMonad.unit(Right("Received")) // Return string on success
+      })
       .backend()
 
-    val multipartRequest = MultipartData("test", Array[Byte](1, 2, 3)) // Example data
+    val multipartRequest = MultipartData("test", Array[Byte](1, 2, 3))
 
     val response = SttpClientInterpreter()
-      .toRequestThrowDecodeFailures(endpoint, Some(uri"http://test.com"))
+      .toRequestThrowDecodeFailures(multipartEndpoint, Some(uri"http://test.com"))
       .apply(multipartRequest)
       .send(backend)
 
-    response.body shouldBe Right("Received")
+    // Check that the response body is a Right with the expected string
+    response.body shouldBe Right("Received") // This should match the response type
   }
 
   it should "handle multipart request using derived multipart body" in {
     case class FileUpload(name: String, data: Array[Byte])
     implicit val fileUploadSchema: Schema[FileUpload] = Schema.derived[FileUpload] // Manual schema derivation
 
+    // Define the endpoint
     val uploadEndpoint = endpoint.post
-      .in(multipartBody[FileUpload]) // Using derived multipart body
-      .out(stringBody)
+      .in(multipartBody[FileUpload])
+      .out(stringBody) // Expecting a string response
 
+    // Set up the backend with the correct server logic
     val backend = TapirStubInterpreter(options, SttpBackendStub(IdMonad))
-      .whenServerEndpointRunLogic(uploadEndpoint.serverLogic(_ => IdMonad.unit(Right("Upload Successful"))))
+      .whenServerEndpointRunLogic(uploadEndpoint.serverLogic { _ =>
+        IdMonad.unit(Right("Upload Successful")) // Return string on success
+      })
       .backend()
 
-    val filePart = FileUpload("example.txt", Array[Byte](1, 2, 3)) // Example data
+    val filePart = FileUpload("example.txt", Array[Byte](1, 2, 3))
 
     val response = SttpClientInterpreter()
-      .toRequestThrowDecodeFailures(endpoint, Some(uri"http://test.com"))
+      .toRequestThrowDecodeFailures(uploadEndpoint, Some(uri"http://test.com"))
       .apply(filePart)
       .send(backend)
 
-    response.body shouldBe Right("Upload Successful")
+    // Check that the response body is a Right with the expected string
+    response.body shouldBe Right("Upload Successful") // This should match the response type
   }
 
 }
