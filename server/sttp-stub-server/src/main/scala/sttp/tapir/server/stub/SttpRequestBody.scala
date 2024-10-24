@@ -3,7 +3,7 @@ package sttp.tapir.server.stub
 import sttp.client3.{ByteArrayBody, ByteBufferBody, FileBody, InputStreamBody, MultipartBody, NoBody, Request, StreamBody, StringBody}
 import sttp.monad.MonadError
 import sttp.tapir.InputStreamRange
-import sttp.tapir.RawBodyType
+import sttp.tapir.{RawBodyType, Schema}
 import sttp.tapir.model.ServerRequest
 import sttp.tapir.server.interpreter.{RawValue, RequestBody}
 
@@ -24,10 +24,31 @@ class SttpRequestBody[F[_]](implicit ME: MonadError[F]) extends RequestBody[F, A
           case RawBodyType.InputStreamBody      => ME.unit(RawValue(new ByteArrayInputStream(bytes)))
           case RawBodyType.FileBody             => ME.error(new UnsupportedOperationException)
           case RawBodyType.InputStreamRangeBody => ME.unit(RawValue(InputStreamRange(() => new ByteArrayInputStream(bytes))))
-          case _: RawBodyType.MultipartBody     => ME.error(new UnsupportedOperationException)
+          case _: RawBodyType.MultipartBody     => parseMultipartBody(serverRequest)
         }
-      case _ => throw new IllegalArgumentException("Stream body provided while endpoint accepts raw body type")
+      case Right(value) =>
+        bodyType match {
+          case RawBodyType.MultipartBody(partTypes, defaultType) =>
+            ME.unit(RawValue(value.asInstanceOf[R]))
+          case _ => throw new IllegalArgumentException("Stream body provided while endpoint accepts raw body type")
+        }
     }
+
+  private def parseMultipartBody(serverRequest: ServerRequest): F[RawValue[Seq[RawValue[_]]]] = {
+    val sttpRequest = serverRequest.underlying.asInstanceOf[Request[_, _]]
+    sttpRequest.body match {
+      case MultipartBody(parts) =>
+        val rawParts = parts.map { part =>
+          part.body match {
+            case StringBody(content, encoding, _) => RawValue(content.getBytes(encoding))
+            case FileBody(file, _)                => RawValue(file.readAsByteArray)
+            case _                                => throw new UnsupportedOperationException("Unsupported part type")
+          }
+        }
+        ME.unit(RawValue(rawParts))
+      case _ => ME.error(new IllegalArgumentException("Expected a multipart body"))
+    }
+  }
 
   override def toStream(serverRequest: ServerRequest, maxBytes: Option[Long]): streams.BinaryStream = body(serverRequest) match {
     case Right(stream) => stream
@@ -45,8 +66,8 @@ class SttpRequestBody[F[_]](implicit ME: MonadError[F]) extends RequestBody[F, A
     case InputStreamBody(b, _)      => Left(toByteArray(b))
     case FileBody(f, _)             => Left(f.readAsByteArray)
     case StreamBody(s)              => Right(s)
-    case MultipartBody(_) =>
-      throw new IllegalArgumentException("Stub cannot handle multipart bodies")
+    case MultipartBody(parts) =>
+      Right(parts)
   }
 
   private def toByteArray(is: InputStream): Array[Byte] = {
