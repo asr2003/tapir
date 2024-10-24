@@ -14,6 +14,7 @@ import sttp.tapir.server.interceptor.exception.ExceptionHandler
 import sttp.tapir.server.interceptor.reject.RejectHandler
 import sttp.tapir.server.interceptor.{CustomiseInterceptors, Interceptor}
 import sttp.tapir.server.model.ValuedEndpointOutput
+import sttp.tapir.generic.auto._
 
 class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
 
@@ -228,6 +229,7 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
 
   it should "handle multipart request using derived multipart body" in {
     case class FileUpload(name: String, data: Array[Byte])
+    implicit val fileUploadSchema: Schema[FileUpload] = Schema.derived[FileUpload] // Manual schema derivation
 
     val uploadEndpoint = endpoint.post
       .in(multipartBody[FileUpload]) // Using derived multipart body
