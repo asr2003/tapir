@@ -211,11 +211,11 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
 
     val multipartEndpoint = endpoint.post
       .in(multipartBody[MultipartData])
-      .out(stringBody) 
+      .out(stringBody)
 
     val backend = TapirStubInterpreter(options, SttpBackendStub(IdMonad))
       .whenServerEndpointRunLogic(multipartEndpoint.serverLogic { _ =>
-        IdMonad.unit(Right("Received")) 
+        IdMonad.unit(Right("Received"))
       })
       .backend()
 
@@ -226,7 +226,7 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
       .apply(multipartRequest)
       .send(backend)
 
-    response.body shouldBe Right("Received") 
+    response.body shouldBe Right("Received")
   }
 
   it should "handle multipart request using derived multipart body" in {
@@ -235,11 +235,12 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
 
     val uploadEndpoint = endpoint.post
       .in(multipartBody[FileUpload])
-      .out(stringBody) 
+      .out(stringBody)
 
     val backend = TapirStubInterpreter(options, SttpBackendStub(IdMonad))
       .whenServerEndpointRunLogic(uploadEndpoint.serverLogic { _ =>
-        IdMonad.unit(Right("Upload Successful")) 
+        IdMonad.unit(Right("Upload Successful"))
+      })
       .backend()
 
     val filePart = FileUpload("example.txt", Array[Byte](1, 2, 3))
@@ -250,10 +251,9 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
       .send(backend)
 
     response.body shouldBe Right("Upload Successful")
-      
+
   }
 }
-
 
 object ProductsApi {
 
