@@ -215,7 +215,7 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
 
     val backend = TapirStubInterpreter(options, SttpBackendStub(IdMonad))
       .whenServerEndpointRunLogic(multipartEndpoint.serverLogic {
-        data: MultipartData =>
+        data  =>
           // Log the received data
           println(s"[Server Logic] Received multipart data: text=${data.text}, file=${data.file.mkString(",")}")
           IdMonad.unit(Right("Received"))
@@ -224,14 +224,10 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
 
     val multipartRequest = MultipartData("test", Array[Byte](1, 2, 3))
 
-    println(s"[Test] Sending multipart request: text=${multipartRequest.text}, file=${multipartRequest.file.mkString(",")}")
-
     val response = SttpClientInterpreter()
       .toRequestThrowDecodeFailures(multipartEndpoint, Some(uri"http://test.com"))
       .apply(multipartRequest)
       .send(backend)
-
-    println(s"[Test] Response received: ${response.body}")
 
     response.body shouldBe Right("Received")
   }
