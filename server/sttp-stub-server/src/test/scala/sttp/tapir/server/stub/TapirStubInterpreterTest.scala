@@ -214,17 +214,24 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
       .out(stringBody)
 
     val backend = TapirStubInterpreter(options, SttpBackendStub(IdMonad))
-      .whenServerEndpointRunLogic(multipartEndpoint.serverLogic { _ =>
-        IdMonad.unit(Right("Received"))
+      .whenServerEndpointRunLogic(multipartEndpoint.serverLogic {
+        data: MultipartData =>
+          // Log the received data
+          println(s"[Server Logic] Received multipart data: text=${data.text}, file=${data.file.mkString(",")}")
+          IdMonad.unit(Right("Received"))
       })
       .backend()
 
     val multipartRequest = MultipartData("test", Array[Byte](1, 2, 3))
 
+    println(s"[Test] Sending multipart request: text=${multipartRequest.text}, file=${multipartRequest.file.mkString(",")}")
+
     val response = SttpClientInterpreter()
       .toRequestThrowDecodeFailures(multipartEndpoint, Some(uri"http://test.com"))
       .apply(multipartRequest)
       .send(backend)
+
+    println(s"[Test] Response received: ${response.body}")
 
     response.body shouldBe Right("Received")
   }
@@ -238,17 +245,23 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
       .out(stringBody)
 
     val backend = TapirStubInterpreter(options, SttpBackendStub(IdMonad))
-      .whenServerEndpointRunLogic(uploadEndpoint.serverLogic { _ =>
+      .whenServerEndpointRunLogic(uploadEndpoint.serverLogic { filePart =>
+        // Log the uploaded file part details
+        println(s"[FILECHECK] Received file upload: name=${filePart.name}, data=${filePart.data.mkString(",")}")
         IdMonad.unit(Right("Upload Successful"))
       })
       .backend()
 
     val filePart = FileUpload("example.txt", Array[Byte](1, 2, 3))
 
+    println(s"[FILECHECK]Sending file upload request: name=${filePart.name}, data=${filePart.data.mkString(",")}")
+
     val response = SttpClientInterpreter()
       .toRequestThrowDecodeFailures(uploadEndpoint, Some(uri"http://test.com"))
       .apply(filePart)
       .send(backend)
+
+    println(s"[FILECHECK]Response received: ${response.body}")
 
     response.body shouldBe Right("Upload Successful")
 
