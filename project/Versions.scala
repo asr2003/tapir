@@ -3,7 +3,7 @@ object Versions {
   val http4sBlazeServer = "0.23.16"
   val http4sBlazeClient = "0.23.16"
   val catsCore = "2.12.0"
-  val catsEffect = "3.5.4"
+  val catsEffect = "3.5.5"
   val circe = "0.14.9"
   val circeGenericExtras = "0.14.3"
   val circeYaml = "0.15.2"
@@ -64,7 +64,7 @@ object Versions {
   val mockServer = "5.15.0"
   val dogstatsdClient = "4.4.3"
   val nettyAll = "4.1.114.Final"
-  val logback = "1.5.11"
+  val logback = "1.5.12"
   val slf4j = "2.0.16"
   val jsoniter = "2.31.1"
 }
