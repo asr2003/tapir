@@ -7,7 +7,7 @@ import OpenTelemetryMetrics._
 import io.opentelemetry.api.OpenTelemetry
 import sttp.tapir.model.ServerRequest
 import sttp.tapir.server.interceptor.metrics.MetricsRequestInterceptor
-import sttp.tapir.server.metrics.{EndpointMetric, Metric, MetricLabels, OTELMetricLabels}
+import sttp.tapir.server.metrics.{EndpointMetric, Metric, MetricLabels}
 import sttp.tapir.server.model.ServerResponse
 
 import java.time.{Duration, Instant}
