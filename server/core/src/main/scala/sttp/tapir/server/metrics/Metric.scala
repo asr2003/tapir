@@ -84,28 +84,10 @@ object MetricLabels {
         case Left(_) => "500"
       },
       "error.type" -> {
-        case Left(ex) => ex.getClass.getSimpleName
         case Right(_) => ""
+        case Left(ex) => ex.getClass.getSimpleName
+
       }
     )
   )
 }
-
-// object OTELMetricLabels {
-
-//   /** Labels request by path and http.request.method, response by http.response.status_code */
-//   lazy val Default: MetricLabels = MetricLabels(
-//     forRequest = List(
-//       "http.request.method" -> { case (_, req) => req.method.method },
-//       "path" -> { case (ep, _) => ep.showPathTemplate(showQueryParam = None) }
-//     ),
-//     forResponse = List(
-//       "http.response.status_code" -> {
-//         // OpenTelemetry-compliant
-//         case Right(r) => r.code.code.toString
-//         // Default to 500 for exceptions
-//         case Left(_) => "500"
-//       }
-//     )
-//   )
-// }
