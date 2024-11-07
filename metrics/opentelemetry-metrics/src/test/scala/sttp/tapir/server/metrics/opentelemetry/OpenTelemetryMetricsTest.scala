@@ -67,7 +67,9 @@ class OpenTelemetryMetricsTest extends AnyFlatSpec with Matchers {
         AttributeKey.stringKey("http.request.method"),
         "GET",
         AttributeKey.stringKey("path"),
-        "/person"
+        "/person",
+        AttributeKey.stringKey("url.scheme"),
+        "http"
       )
       point.getValue shouldBe 0
     }
