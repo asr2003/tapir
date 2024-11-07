@@ -232,9 +232,36 @@ class OpenTelemetryMetricsTest extends AnyFlatSpec with Matchers {
       AttributeKey.stringKey("http.response.status_code"),
       "500",
       AttributeKey.stringKey("error.type"),
+      ""
+    )
+    point.getValue shouldBe 1
+  }
+
+  "metrics" should "capture error.type attribute correctly on exception" in {
+    val serverEp = PersonsApi { _ => throw new RuntimeException("Test Exception") }.serverEp
+    val reader = InMemoryMetricReader.create()
+    val provider = SdkMeterProvider.builder().registerMetricReader(reader).build()
+    val meter = provider.get("tapir-instrumentation")
+    val metrics = OpenTelemetryMetrics[Identity](meter).addRequestsTotal()
+    val interpreter = new ServerInterpreter[Any, Identity, String, NoStreams](
+      _ => List(serverEp),
+      TestRequestBody,
+      StringToResponseBody,
+      List(metrics.metricsInterceptor()),
+      _ => ()
+    )
+
+    // when
+    interpreter.apply(PersonsApi.request("Jacob"))
+
+    // then
+    val point = longSumData(reader).head
+    point.getAttributes shouldBe Attributes.of(
+      AttributeKey.stringKey("error.type"),
       "RuntimeException"
     )
     point.getValue shouldBe 1
+
   }
 
   private def longSumData(reader: InMemoryMetricReader): List[LongPointData] =

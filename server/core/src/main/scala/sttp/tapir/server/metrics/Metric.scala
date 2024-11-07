@@ -84,8 +84,8 @@ object MetricLabels {
         case Left(_) => "500"
       },
       "error.type" -> {
-        case Right(_) => ""
         case Left(ex) => ex.getClass.getSimpleName
+        case Right(_) => ""
 
       }
     )
