@@ -165,6 +165,11 @@ object OpenTelemetryMetrics {
         }
     )
 
+    def captureError(exception: Throwable): Unit = {
+      val errorType = exception.getClass.getSimpleName
+      meter.counter("error.type").add(1, Attributes.of(AttributeKey.stringKey("error.type"), errorType))
+    }
+
   private def defaultMeter(otel: OpenTelemetry): Meter = otel.meterBuilder("tapir").setInstrumentationVersion("1.0.0").build()
 
   private def asOpenTelemetryAttributes(l: MetricLabels, ep: AnyEndpoint, req: ServerRequest): Attributes =

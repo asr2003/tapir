@@ -5,6 +5,7 @@ import sttp.model.StatusCode
 import sttp.monad.MonadError
 import sttp.tapir.server.model.ValuedEndpointOutput
 import sttp.tapir._
+import sttp.tapir.server.metrics.opentelemetry.OpenTelemetryMetrics
 
 trait ExceptionHandler[F[_]] {
   def apply(ctx: ExceptionContext)(implicit monad: MonadError[F]): F[Option[ValuedEndpointOutput[_]]]
@@ -26,7 +27,7 @@ object ExceptionHandler {
 
 case class DefaultExceptionHandler[F[_]](response: (StatusCode, String) => ValuedEndpointOutput[_]) extends ExceptionHandler[F] {
   override def apply(ctx: ExceptionContext)(implicit monad: MonadError[F]): F[Option[ValuedEndpointOutput[_]]] =
-    (ctx.e, ctx.e.getCause()) match {
+    metrics.captureError(ctx.e)(ctx.e, ctx.e.getCause()) match {
       case (StreamMaxLengthExceededException(maxBytes), _) =>
         monad.unit(Some(response(StatusCode.PayloadTooLarge, s"Payload limit (${maxBytes}B) exceeded")))
       case (_, StreamMaxLengthExceededException(maxBytes)) =>

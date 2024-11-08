@@ -247,7 +247,7 @@ class OpenTelemetryMetricsTest extends AnyFlatSpec with Matchers {
       _ => List(serverEp),
       TestRequestBody,
       StringToResponseBody,
-      List(metrics.metricsInterceptor()),
+      List(metrics.metricsInterceptor(), new ExceptionInterceptor(DefaultExceptionHandler[Identity])),
       _ => ()
     )
 
