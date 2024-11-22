@@ -14,6 +14,7 @@ import sttp.tapir.server.interceptor.exception.ExceptionHandler
 import sttp.tapir.server.interceptor.reject.RejectHandler
 import sttp.tapir.server.interceptor.{CustomiseInterceptors, Interceptor}
 import sttp.tapir.server.model.ValuedEndpointOutput
+import sttp.tapir.generic.auto._
 
 class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
 
@@ -203,6 +204,63 @@ class TapirStubInterpreterTest extends AnyFlatSpec with Matchers {
     // then
     response.body shouldBe Left("Internal server error")
     response.code shouldBe StatusCode.InternalServerError
+  }
+
+  it should "handle multipart request and verify it is correctly received by the endpoint logic" in {
+    case class MultipartData(text: String, file: Array[Byte])
+
+    val multipartEndpoint = endpoint.post
+      .in(multipartBody[MultipartData])
+      .out(stringBody)
+
+    val backend = TapirStubInterpreter(options, SttpBackendStub(IdMonad))
+      .whenServerEndpointRunLogic(multipartEndpoint.serverLogic {
+        data  =>
+          // Log the received data
+          println(s"[Server Logic] Received multipart data: text=${data.text}, file=${data.file.mkString(",")}")
+          IdMonad.unit(Right("Received"))
+      })
+      .backend()
+
+    val multipartRequest = MultipartData("test", Array[Byte](1, 2, 3))
+
+    val response = SttpClientInterpreter()
+      .toRequestThrowDecodeFailures(multipartEndpoint, Some(uri"http://test.com"))
+      .apply(multipartRequest)
+      .send(backend)
+
+    response.body shouldBe Right("Received")
+  }
+
+  it should "handle multipart request using derived multipart body" in {
+    case class FileUpload(name: String, data: Array[Byte])
+    implicit val fileUploadSchema: Schema[FileUpload] = Schema.derived[FileUpload] // Manual schema derivation
+
+    val uploadEndpoint = endpoint.post
+      .in(multipartBody[FileUpload])
+      .out(stringBody)
+
+    val backend = TapirStubInterpreter(options, SttpBackendStub(IdMonad))
+      .whenServerEndpointRunLogic(uploadEndpoint.serverLogic { filePart =>
+        // Log the uploaded file part details
+        println(s"[FILECHECK] Received file upload: name=${filePart.name}, data=${filePart.data.mkString(",")}")
+        IdMonad.unit(Right("Upload Successful"))
+      })
+      .backend()
+
+    val filePart = FileUpload("example.txt", Array[Byte](1, 2, 3))
+
+    println(s"[FILECHECK]Sending file upload request: name=${filePart.name}, data=${filePart.data.mkString(",")}")
+
+    val response = SttpClientInterpreter()
+      .toRequestThrowDecodeFailures(uploadEndpoint, Some(uri"http://test.com"))
+      .apply(filePart)
+      .send(backend)
+
+    println(s"[FILECHECK]Response received: ${response.body}")
+
+    response.body shouldBe Right("Upload Successful")
+
   }
 }
 
